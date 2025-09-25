@@ -60,3 +60,4 @@ Update your frontend to use the Railway URL instead of Firebase Functions.
 - ✅ Instant rollbacks
 - ✅ Better performance
 - ✅ No cold starts
+

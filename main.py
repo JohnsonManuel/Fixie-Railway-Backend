@@ -35,7 +35,7 @@ app = FastAPI(title="Fixie AI Chat Backend", version="1.0.0")
 # CORS middleware to allow frontend connections
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[Config.FRONTEND_URL, "http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["*"],  # Allow all origins for Railway deployment
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -74,6 +74,11 @@ class ChatResponse(BaseModel):
 @app.get("/")
 async def root():
     return {"message": "Fixie AI Chat Backend - Python Version", "status": "running"}
+
+@app.get("/ping")
+async def ping():
+    """Simple ping endpoint for Railway healthcheck"""
+    return {"status": "ok", "message": "pong"}
 
 @app.get("/health")
 async def health_check():

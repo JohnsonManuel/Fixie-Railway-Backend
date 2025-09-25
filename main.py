@@ -10,8 +10,25 @@ from datetime import datetime
 import json
 
 from config import Config
-from agents import run_multi_agent_workflow, create_ticket_directly
-from approval_workflow import run_approval_workflow
+
+# Import agents conditionally to handle missing API keys gracefully
+try:
+    from agents import run_multi_agent_workflow, create_ticket_directly
+    from approval_workflow import run_approval_workflow
+    AGENTS_AVAILABLE = True
+except Exception as e:
+    print(f"⚠️ Agents not available: {e}")
+    AGENTS_AVAILABLE = False
+    
+    # Create dummy functions for when agents aren't available
+    def run_multi_agent_workflow(*args, **kwargs):
+        return {"content": "Sorry, the AI agents are not available. Please check your API configuration."}
+    
+    def create_ticket_directly(*args, **kwargs):
+        return {"success": False, "content": "Ticket creation is not available. Please check your API configuration."}
+    
+    def run_approval_workflow(*args, **kwargs):
+        return {"content": "Sorry, the approval workflow is not available. Please check your API configuration."}
 
 app = FastAPI(title="Fixie AI Chat Backend", version="1.0.0")
 
@@ -60,7 +77,13 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+    return {
+        "status": "healthy", 
+        "timestamp": datetime.now().isoformat(),
+        "agents_available": AGENTS_AVAILABLE,
+        "openai_configured": Config.OPENAI_API_KEY != "your-openai-api-key-here",
+        "freshdesk_configured": Config.FRESHDESK_API_KEY != "your-freshdesk-api-key-here"
+    }
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
@@ -322,6 +345,7 @@ if __name__ == "__main__":
     print(f"🌐 Frontend URL: {Config.FRONTEND_URL}")
     print(f"🔑 OpenAI API Key: {'✅ Set' if Config.OPENAI_API_KEY != 'your-openai-api-key-here' else '❌ Not set'}")
     print(f"🎫 Freshdesk Domain: {Config.FRESHDESK_DOMAIN}")
+    print(f"🤖 Agents Available: {'✅ Yes' if AGENTS_AVAILABLE else '❌ No (check API keys)'}")
     
     uvicorn.run(
         "main:app", 
